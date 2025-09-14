@@ -1,12 +1,12 @@
 {
   "domain": "illuminance_plus",
   "name": "Illuminance Plus",
-  "codeowners": ["@DEIN_GITHUB_HANDLE"],
+  "codeowners": ["@snafus-io"],
   "config_flow": true,
-  "documentation": "https://github.com/DEIN_GITHUB/illuminance_plus",
-  "homeassistant": "2024.6.0",
+  "documentation": "https://github.com/snafus-io/illuminance_plus",
   "iot_class": "calculated",
-  "issue_tracker": "https://github.com/DEIN_GITHUB/illuminance_plus/issues",
+  "issue_tracker": "https://github.com/snafus-io/illuminance_plus/issues",
+  "loggers": ["custom_components.illuminance_plus"],
   "requirements": [],
-  "version": "0.2.6"
+  "version": "0.2.7"
 }
