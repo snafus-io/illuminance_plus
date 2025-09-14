@@ -1,12 +1,12 @@
 {
   "domain": "illuminance_plus",
   "name": "Illuminance Plus",
-  "version": "0.2.7",
-  "documentation": "https://github.com/MartinKluger/illuminance_plus",
-  "issue_tracker": "https://github.com/MartinKluger/illuminance_plus/issues",
-  "codeowners": ["@MartinKluger"],
-  "iot_class": "calculated",
-  "dependencies": ["sun"],
+  "codeowners": ["@DEIN_GITHUB_HANDLE"],
   "config_flow": true,
-  "requirements": []
+  "documentation": "https://github.com/DEIN_GITHUB/illuminance_plus",
+  "homeassistant": "2024.6.0",
+  "iot_class": "calculated",
+  "issue_tracker": "https://github.com/DEIN_GITHUB/illuminance_plus/issues",
+  "requirements": [],
+  "version": "0.2.6"
 }
