@@ -1,0 +1,47 @@
+{
+  "title": "Illuminance Plus",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Create Illuminance Plus",
+        "description": "Calculates outdoor illuminance (lux) from sun elevation and refines it with optional weather sensors. The entity exposes attributes 'daypart' (with localization) and 'is_dark' (with hysteresis).",
+        "data": {
+          "name": "Name",
+          "weather_entity": "Weather entity (optional)",
+          "cloud_entity": "Cloud coverage (0–100 %, optional)",
+          "precip_entity": "Precipitation (mm/h, optional)",
+          "visibility_entity": "Visibility (km, optional)",
+          "mode": "Mode",
+          "scan_seconds": "Update interval (seconds)",
+          "on_threshold": "Hysteresis: turn ON (lux)",
+          "off_threshold": "Hysteresis: turn OFF (lux)",
+          "max_cloud_div": "Max cloud attenuation (÷)"
+        }
+      }
+    },
+    "error": {
+      "base": "Invalid configuration",
+      "thresholds": "Hysteresis invalid: 'ON' must be ≤ 'OFF'."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Illuminance Plus options",
+        "description": "Adjust inputs and thresholds.",
+        "data": {
+          "name": "Name",
+          "weather_entity": "Weather entity (optional)",
+          "cloud_entity": "Cloud coverage (0–100 %, optional)",
+          "precip_entity": "Precipitation (mm/h, optional)",
+          "visibility_entity": "Visibility (km, optional)",
+          "mode": "Mode",
+          "scan_seconds": "Update interval (seconds)",
+          "on_threshold": "Hysteresis: turn ON (lux)",
+          "off_threshold": "Hysteresis: turn OFF (lux)",
+          "max_cloud_div": "Max cloud attenuation (÷)"
+        }
+      }
+    }
+  }
+}

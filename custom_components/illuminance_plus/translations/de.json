@@ -1,0 +1,47 @@
+{
+  "title": "Illuminance Plus",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Illuminance Plus anlegen",
+        "description": "Berechnet Außen-Lux aus Sonnenhöhe und verfeinert mit optionalen Wetter-Sensoren. Die Entität stellt die Attribute „daypart“ (lokalisiert) und „is_dark“ (mit Hysterese) bereit.",
+        "data": {
+          "name": "Name",
+          "weather_entity": "Wetter-Entität (optional)",
+          "cloud_entity": "Wolkenbedeckung (0–100 %, optional)",
+          "precip_entity": "Niederschlag (mm/h, optional)",
+          "visibility_entity": "Sichtweite (km, optional)",
+          "mode": "Modus",
+          "scan_seconds": "Aktualisierungsintervall (Sekunden)",
+          "on_threshold": "Hysterese: Einschalten bei (Lux)",
+          "off_threshold": "Hysterese: Ausschalten bei (Lux)",
+          "max_cloud_div": "Max. Wolken-Dämpfung (÷)"
+        }
+      }
+    },
+    "error": {
+      "base": "Ungültige Konfiguration",
+      "thresholds": "Hysterese ungültig: „Einschalten bei“ muss ≤ „Ausschalten bei“ sein."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Illuminance Plus – Optionen",
+        "description": "Eingaben und Schwellwerte anpassen.",
+        "data": {
+          "name": "Name",
+          "weather_entity": "Wetter-Entität (optional)",
+          "cloud_entity": "Wolkenbedeckung (0–100 %, optional)",
+          "precip_entity": "Niederschlag (mm/h, optional)",
+          "visibility_entity": "Sichtweite (km, optional)",
+          "mode": "Modus",
+          "scan_seconds": "Aktualisierungsintervall (Sekunden)",
+          "on_threshold": "Hysterese: Einschalten bei (Lux)",
+          "off_threshold": "Hysterese: Ausschalten bei (Lux)",
+          "max_cloud_div": "Max. Wolken-Dämpfung (÷)"
+        }
+      }
+    }
+  }
+}

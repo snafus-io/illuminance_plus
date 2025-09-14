@@ -1,0 +1,12 @@
+{
+  "domain": "illuminance_plus",
+  "name": "Illuminance Plus",
+  "version": "0.2.7",
+  "documentation": "https://github.com/MartinKluger/illuminance_plus",
+  "issue_tracker": "https://github.com/MartinKluger/illuminance_plus/issues",
+  "codeowners": ["@MartinKluger"],
+  "iot_class": "calculated",
+  "dependencies": ["sun"],
+  "config_flow": true,
+  "requirements": []
+}

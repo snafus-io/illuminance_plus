@@ -1,0 +1,11 @@
+# Illuminance Plus – © 2025 Martin Kluger
+# Based on clear-sky model by pnbruckner (ha-illuminance)
+# License: MIT
+
+refresh:
+  name: Refresh now
+  description: Berechnet den Wert sofort neu (unabhängig vom Updateintervall).
+  target:
+    entity:
+      integration: illuminance_plus
+      domain: sensor

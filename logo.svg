@@ -1,0 +1,32 @@
+<svg width="900" height="300" viewBox="0 0 900 300" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <filter id="s" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="3" stdDeviation="5" flood-opacity="0.18"></feDropShadow>
+    </filter>
+  </defs>
+
+  <!-- Icon (wie oben, etwas kleiner) -->
+  <g transform="translate(20,10)" filter="url(#s)">
+    <circle cx="110" cy="95" r="52" fill="#FFC84A"></circle>
+    <g stroke="#FFC84A" stroke-width="12" stroke-linecap="round">
+      <line x1="110" y1="30" x2="110" y2="8"></line>
+      <line x1="110" y1="160" x2="110" y2="182"></line>
+      <line x1="45" y1="95" x2="23" y2="95"></line>
+      <line x1="197" y1="95" x2="219" y2="95"></line>
+      <line x1="66" y1="51" x2="50" y2="35"></line>
+      <line x1="170" y1="139" x2="186" y2="155"></line>
+      <line x1="66" y1="139" x2="50" y2="155"></line>
+      <line x1="170" y1="35" x2="186" y2="51"></line>
+    </g>
+    <path d="M200 130c-17 0-32 9-40 22a50 50 0 0 0-16-2c-28 0-50 20-50 44s22 44 50 44h108c22 0 40-15 40-34 0-18-15-32-35-34-5-22-27-40-57-40z" fill="#5DADEC"></path>
+    <g font-family="Inter,Segoe UI,Roboto,Arial" font-weight="700" font-size="72" fill="#0F172A" opacity="0.9">
+      <text x="122" y="220">lx</text>
+    </g>
+  </g>
+
+  <!-- Wortmarke -->
+  <g transform="translate(300,170)">
+    <text font-family="Inter,Segoe UI,Roboto,Arial" font-weight="800" font-size="76" fill="#0F172A">Illuminance</text>
+    <text x="0" y="56" font-family="Inter,Segoe UI,Roboto,Arial" font-weight="600" font-size="44" fill="#2563EB">Plus</text>
+  </g>
+</svg>
