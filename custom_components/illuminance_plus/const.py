@@ -4,6 +4,9 @@
 
 DOMAIN = "illuminance_plus"
 
+# Einheit für Lux (robuster Fallback, unabhängig von HA-Version)
+UNIT_LUX = "lx"
+
 DEFAULT_NAME = "Illuminance Plus"
 DEFAULT_MODE = "normal"  # normal | simple
 DEFAULT_SCAN_SECONDS = 120
@@ -30,8 +33,8 @@ DEFAULT_DARK_SENSITIVITY = 100
 
 # ----------------- NEU: Trend -----------------
 CONF_TREND_ENABLED = "trend_enabled"
-CONF_TREND_WIN_5M = "trend_window_5m"          # Minuten
-CONF_TREND_WIN_15M = "trend_window_15m"        # Minuten
+CONF_TREND_WIN_5M = "trend_window_5m"           # Minuten
+CONF_TREND_WIN_15M = "trend_window_15m"         # Minuten
 CONF_TREND_TH_DOWN = "darkening_fast_threshold" # lx/min (negativ)
 CONF_TREND_TH_UP   = "brightening_fast_threshold" # lx/min (positiv)
 DEFAULT_TREND_ENABLED = False
@@ -45,7 +48,7 @@ CONF_FORECAST_ENABLED = "forecast_enabled"
 CONF_FORECAST_15M = "forecast_15m"
 CONF_FORECAST_30M = "forecast_30m"
 CONF_FORECAST_60M = "forecast_60m"
-CONF_DARK_SOON_MARGIN = "dark_soon_margin"     # lx Puffer zur EIN-Schwelle
+CONF_DARK_SOON_MARGIN = "dark_soon_margin"      # lx Puffer zur EIN-Schwelle
 DEFAULT_FORECAST_ENABLED = False
 DEFAULT_FORECAST_15M = True
 DEFAULT_FORECAST_30M = True
@@ -62,11 +65,11 @@ DEFAULT_HELPERS_ENABLED = False
 
 # ------------- NEU: Fenster / Blendung -------------
 CONF_WINDOWS_ENABLED = "windows_enabled"
-CONF_WINDOWS_YAML = "windows_yaml"             # YAML-Liste (name, azimuth, fov, elev_min)
+CONF_WINDOWS_YAML = "windows_yaml"              # YAML-Liste (name, azimuth, fov, elev_min)
 CONF_GLARE_ENABLED = "glare_enabled"
 DEFAULT_WINDOWS_ENABLED = False
-DEFAULT_WINDOWS_YAML = ""                       # leer = keine Fenster
-DEFAULT_GLARE_ENABLED = True                    # wenn Fenster aktiv: Blend-Risiko berechnen
+DEFAULT_WINDOWS_YAML = ""                        # leer = keine Fenster
+DEFAULT_GLARE_ENABLED = True                     # wenn Fenster aktiv: Blend-Risiko berechnen
 
 # Mapping, wenn KEIN numerischer Cloud-%-Sensor vorhanden
 WEATHER_FACTORS = {

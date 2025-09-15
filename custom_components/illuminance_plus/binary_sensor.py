@@ -1,6 +1,7 @@
 # Illuminance Plus – Helper Binary Sensors
 # © 2025 Martin Kluger – MIT
 
+
 from __future__ import annotations
 
 from typing import Any, Optional
@@ -88,7 +89,6 @@ class _BaseAttrMirror(BinarySensorEntity):
 class IllumPlusDarkHelper(_BaseAttrMirror):
     """binary_sensor.* für is_dark"""
 
-
     def _update_from_target(self) -> None:
         val = self._get_attr_bool("is_dark")
         self._attr_is_on = bool(val) if val is not None else None
@@ -97,7 +97,6 @@ class IllumPlusDarkHelper(_BaseAttrMirror):
 
 class IllumPlusDarkSoonHelper(_BaseAttrMirror):
     """binary_sensor.* für dark_soon"""
-
 
     def _update_from_target(self) -> None:
         val = self._get_attr_bool("dark_soon")

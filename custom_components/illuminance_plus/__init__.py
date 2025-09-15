@@ -6,7 +6,7 @@ from homeassistant.const import Platform
 
 from .const import DOMAIN
 
-# Falls du die optionalen Helper-Binary-Sensoren nutzt, bleibt BINARY_SENSOR drin.
+# Sensor + optionale Helper (binary_sensor)
 PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.BINARY_SENSOR]
 
 
@@ -29,7 +29,7 @@ async def _update_listener(hass: HomeAssistant, entry: ConfigEntry) -> None:
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload the integration entry."""
-    # WICHTIG: Nur (entry, PLATFORMS) übergeben – nicht 'hass' zusätzlich!
+    # Wichtig: nur (entry, PLATFORMS) übergeben – nicht 'hass' zusätzlich!
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unload_ok:
         hass.data.get(DOMAIN, {}).pop(entry.entry_id, None)
