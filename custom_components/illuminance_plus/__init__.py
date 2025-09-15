@@ -10,7 +10,7 @@ from homeassistant.const import Platform
 
 from .const import DOMAIN
 
-PLATFORMS = [Platform.SENSOR]
+PLATFORMS = [Platform.SENSOR, Platform.BINARY_SENSOR]
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -27,16 +27,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     if not data.get("service_registered"):
         async def _refresh_all(call: ServiceCall) -> None:
             """Alle Illuminance-Plus-Entitäten sofort neu berechnen."""
-            # Per Entity-Registry gezielt alle Entities unserer Integration finden
             from homeassistant.helpers import entity_registry as er
             ent_reg = er.async_get(hass)
             entity_ids = [
                 e.entity_id
                 for e in ent_reg.entities.values()
-                if e.platform == DOMAIN and e.domain == "sensor"
+                if e.platform == DOMAIN and e.domain in ("sensor", "binary_sensor")
             ]
             if entity_ids:
-                # unseren Entity-Service 'refresh' auf alle anwenden
                 await hass.services.async_call(
                     DOMAIN, "refresh", {"entity_id": entity_ids}, blocking=False
                 )
@@ -55,7 +53,9 @@ async def _update_listener(hass: HomeAssistant, entry: ConfigEntry) -> None:
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload."""
-    unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+    unload_ok = await hass.config_entries.async_unload_platforms(hass, entry, PLATFORMS) \
+        if hasattr(hass.config_entries, "async_unload_platforms") else \
+        await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
 
     # Optionalen globalen Dienst aufräumen, wenn keine Einträge mehr vorhanden sind
     data = hass.data.get(DOMAIN)
@@ -64,9 +64,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         if isinstance(entries, set):
             entries.discard(entry.entry_id)
             if not entries and data.get("service_registered"):
-                # letzten Eintrag entladen -> Dienst entfernen
                 hass.services.async_remove(DOMAIN, "refresh_all")
                 data["service_registered"] = False
 
     return unload_ok
-

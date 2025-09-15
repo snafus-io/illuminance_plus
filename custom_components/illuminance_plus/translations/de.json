@@ -3,25 +3,25 @@
   "config": {
     "step": {
       "user": {
-        "title": "Illuminance Plus anlegen",
-        "description": "Berechnet Außen-Lux aus Sonnenhöhe und verfeinert mit optionalen Wetter-Sensoren. Die Entität stellt die Attribute „daypart“ (lokalisiert) und „is_dark“ (mit Hysterese) bereit.",
+        "title": "Illuminance Plus erstellen",
+        "description": "Berechnet die Außen-Helligkeit (Lux) und verfeinert sie mit optionalen Wetter-Sensoren. Stellt 'daypart' und 'is_dark' (mit Hysterese) bereit.",
         "data": {
           "name": "Name",
           "weather_entity": "Wetter-Entität (optional)",
-          "cloud_entity": "Wolkenbedeckung (0–100 %, optional)",
-          "precip_entity": "Niederschlag (mm/h, optional)",
-          "visibility_entity": "Sichtweite (km, optional)",
+          "cloud_entity": "Bewölkung (optional)",
+          "precip_entity": "Niederschlag (optional)",
+          "visibility_entity": "Sichtweite (optional)",
           "mode": "Modus",
-          "scan_seconds": "Aktualisierungsintervall (Sekunden)",
-          "on_threshold": "Hysterese: Einschalten bei (Lux)",
-          "off_threshold": "Hysterese: Ausschalten bei (Lux)",
-          "max_cloud_div": "Max. Wolken-Dämpfung (÷)"
+          "scan_seconds": "Aktualisierungsintervall",
+          "on_threshold": "Hysterese: Einschalten",
+          "off_threshold": "Hysterese: Ausschalten",
+          "max_cloud_div": "Max. Wolkendämpfung"
         }
       }
     },
     "error": {
       "base": "Ungültige Konfiguration",
-      "thresholds": "Hysterese ungültig: „Einschalten bei“ muss ≤ „Ausschalten bei“ sein."
+      "thresholds": "Hysterese ungültig: 'EIN' muss ≤ 'AUS' sein."
     }
   },
   "options": {
@@ -32,14 +32,31 @@
         "data": {
           "name": "Name",
           "weather_entity": "Wetter-Entität (optional)",
-          "cloud_entity": "Wolkenbedeckung (0–100 %, optional)",
-          "precip_entity": "Niederschlag (mm/h, optional)",
-          "visibility_entity": "Sichtweite (km, optional)",
+          "cloud_entity": "Bewölkung (optional)",
+          "precip_entity": "Niederschlag (optional)",
+          "visibility_entity": "Sichtweite (optional)",
           "mode": "Modus",
-          "scan_seconds": "Aktualisierungsintervall (Sekunden)",
-          "on_threshold": "Hysterese: Einschalten bei (Lux)",
-          "off_threshold": "Hysterese: Ausschalten bei (Lux)",
-          "max_cloud_div": "Max. Wolken-Dämpfung (÷)"
+          "scan_seconds": "Aktualisierungsintervall",
+          "smooth_seconds": "Glättung",
+          "on_threshold": "Hysterese: Einschalten",
+          "off_threshold": "Hysterese: Ausschalten",
+          "max_cloud_div": "Max. Wolkendämpfung",
+          "dark_sensitivity": "Dunkel-Empfindlichkeit",
+          "trend_enabled": "Trend-Erkennung aktivieren",
+          "trend_window_5m": "Trend-Fenster (5 Min)",
+          "trend_window_15m": "Trend-Fenster (15 Min)",
+          "darkening_fast_threshold": "Schwelle: wird schnell dunkler",
+          "brightening_fast_threshold": "Schwelle: wird schnell heller",
+          "forecast_enabled": "Kurzfrist-Prognose aktivieren",
+          "forecast_15m": "Prognose 15 Min",
+          "forecast_30m": "Prognose 30 Min",
+          "forecast_60m": "Prognose 60 Min",
+          "dark_soon_margin": "Puffer für 'bald dunkel'",
+          "twilight_enabled": "Twilight-Flags aktivieren",
+          "helpers_enabled": "Helper-Entitäten bereitstellen",
+          "windows_enabled": "Fenster-/Blend-Bewertung aktivieren",
+          "glare_enabled": "Blend-Risiko berechnen (wenn Fenster aktiv)",
+          "windows_yaml": "Fenster-YAML (name, azimuth, fov, elev_min)"
         }
       }
     }

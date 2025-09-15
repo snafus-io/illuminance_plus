@@ -7,15 +7,35 @@ from __future__ import annotations
 import asyncio
 import logging
 import math
-from math import radians, sin, cos, asin, exp
+from collections import deque
 from datetime import timedelta
+from math import radians, sin, cos, asin, exp
 from typing import Any
 
+import yaml
 from homeassistant.components.sensor import SensorEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.event import async_track_time_interval
 from homeassistant.helpers import entity_platform
+from homeassistant.helpers.event import async_track_time_interval
+from homeassistant.util import dt as dt_util
+
+from .const import (
+    DEFAULT_FALLBACK, DEFAULT_MAX_CLOUD_DIV, DEFAULT_MODE, DEFAULT_NAME,
+    DEFAULT_SCAN_SECONDS, DEFAULT_SMOOTH_SECONDS, DOMAIN,
+    WEATHER_FACTORS,
+    CONF_NAME, CONF_MODE, CONF_SCAN, CONF_WEATHER, CONF_CLOUD, CONF_PRECIP, CONF_VIS,
+    CONF_ON, CONF_OFF, CONF_MAX_CLOUD_DIV, CONF_SMOOTH_SECONDS,
+    CONF_DARK_SENSITIVITY, DEFAULT_DARK_SENSITIVITY,
+    # Neu:
+    CONF_TREND_ENABLED, CONF_TREND_WIN_5M, CONF_TREND_WIN_15M, CONF_TREND_TH_DOWN, CONF_TREND_TH_UP,
+    DEFAULT_TREND_ENABLED, DEFAULT_TREND_WIN_5M, DEFAULT_TREND_WIN_15M, DEFAULT_TREND_TH_DOWN, DEFAULT_TREND_TH_UP,
+    CONF_FORECAST_ENABLED, CONF_FORECAST_15M, CONF_FORECAST_30M, CONF_FORECAST_60M, CONF_DARK_SOON_MARGIN,
+    DEFAULT_FORECAST_ENABLED, DEFAULT_FORECAST_15M, DEFAULT_FORECAST_30M, DEFAULT_FORECAST_60M, DEFAULT_DARK_SOON_MARGIN,
+    CONF_TWILIGHT_ENABLED, DEFAULT_TWILIGHT_ENABLED,
+    CONF_WINDOWS_ENABLED, CONF_WINDOWS_YAML, CONF_GLARE_ENABLED,
+    DEFAULT_WINDOWS_ENABLED, DEFAULT_WINDOWS_YAML, DEFAULT_GLARE_ENABLED,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -29,38 +49,6 @@ except Exception:  # noqa: BLE001
         UNIT_LUX = LIGHT_LUX
     except Exception:  # noqa: BLE001
         UNIT_LUX = "lx"
-
-DOMAIN = "illuminance_plus"
-
-# Defaults/Keys
-DEFAULT_NAME = "Illuminance Plus"
-DEFAULT_MODE = "normal"
-DEFAULT_SCAN_SECONDS = 120
-DEFAULT_FALLBACK = 10.0
-DEFAULT_MAX_CLOUD_DIV = 10.0
-DEFAULT_SMOOTH_SECONDS = 180
-
-CONF_NAME = "name"
-CONF_MODE = "mode"
-CONF_SCAN = "scan_seconds"
-CONF_WEATHER = "weather_entity"
-CONF_CLOUD = "cloud_entity"
-CONF_PRECIP = "precip_entity"
-CONF_VIS = "visibility_entity"
-CONF_ON = "on_threshold"
-CONF_OFF = "off_threshold"
-CONF_MAX_CLOUD_DIV = "max_cloud_div"
-CONF_SMOOTH_SECONDS = "smooth_seconds"
-
-# NEU: Empfindlichkeit nur für is_dark (in %)
-CONF_DARK_SENSITIVITY = "dark_sensitivity"
-DEFAULT_DARK_SENSITIVITY = 100
-
-WEATHER_FACTORS: dict[str, float] = {
-    "exceptional": 1.0, "sunny": 1.0, "clear": 1.0,
-    "partlycloudy": 2.0, "cloudy": 5.0, "rainy": 5.0,
-    "pouring": 10.0, "lightning": 10.0, "lightning-rainy": 10.0, "fog": 10.0,
-}
 
 # ------------------------- Helpers ------------------------- #
 def _state(hass: HomeAssistant, entity_id: str | None) -> str | None:
@@ -86,7 +74,11 @@ def _attr(hass: HomeAssistant, entity_id: str | None, key: str) -> Any:
     s = hass.states.get(entity_id)
     return None if s is None else s.attributes.get(key)
 
-# --- Clear-Sky (pnb standard) + simple ---
+def _circ_dist(a: float, b: float) -> float:
+    d = abs(a - b) % 360.0
+    return d if d <= 180.0 else 360.0 - d
+
+# --- Clear-Sky (pnbruckner standard) + simple ---
 def _clear_sky_lux_pnb(elev_deg: float) -> float:
     """Clear-sky nach pnbruckner; 0 lx ab <= -6°."""
     if elev_deg <= -6.0:
@@ -137,10 +129,6 @@ def _gain_low_sun(elev: float) -> float:
     if elev < 5.0:  return 1.4
     if elev < 10.0: return 1.2
     return 1.0
-
-def _circ_dist(a: float, b: float) -> float:
-    d = abs(a - b) % 360.0
-    return d if d <= 180.0 else 360.0 - d
 
 def _daypart_from_sun(elev: float, az: float | None, lat: float | None) -> str:
     if elev < -6.0:
@@ -196,11 +184,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
 
     # Entity-Service 'refresh' registrieren
     platform = entity_platform.async_get_current_platform()
-    platform.async_register_entity_service(
-        "refresh",
-        {},                       # keine Service-Parameter
-        "async_force_refresh",    # Methodenname in der Entity (s. unten)
-    )
+    platform.async_register_entity_service("refresh", {}, "async_force_refresh")
 
 # --------------------------- Entity --------------------------- #
 class IlluminancePlus(SensorEntity):
@@ -225,6 +209,9 @@ class IlluminancePlus(SensorEntity):
 
         # NEU: Lock für manuellen Refresh
         self._refresh_lock = asyncio.Lock()
+
+        # NEU: Trend-Puffer (Zeit, control_lux)
+        self._hist: deque[tuple[float, float]] = deque(maxlen=512)
 
         self._unsub = async_track_time_interval(
             hass, self._update, timedelta(seconds=int(self._scan_secs))
@@ -251,13 +238,49 @@ class IlluminancePlus(SensorEntity):
         """Exponentiell gleitender Mittelwert (EMA) über 'tau' Sekunden."""
         if self._tau is None or self._tau <= 0:
             return raw
-        # Alpha aus kontinuierlicher Zeitkonstante, bezogen auf Abtastzeit
         alpha = 1.0 - math.exp(-self._scan_secs / max(1.0, self._tau))
         if self._ema is None:
             self._ema = raw
         else:
             self._ema = (1.0 - alpha) * self._ema + alpha * raw
         return self._ema
+
+    def _trend(self, now_ts: float, window_min: int, cur_val: float) -> float | None:
+        """lx/min über 'window_min' (bezogen auf control_lux)."""
+        if window_min <= 0 or not self._hist:
+            return None
+        horizon = now_ts - window_min * 60.0
+        oldest = None
+        for ts, val in self._hist:
+            if ts >= horizon:
+                oldest = (ts, val)
+                break
+        if oldest is None:
+            # keine Daten im Fenster – nimm frühesten verfügbaren
+            oldest = self._hist[0]
+        dt_min = max(1e-6, (now_ts - oldest[0]) / 60.0)
+        return (cur_val - oldest[1]) / dt_min
+
+    def _parse_windows(self, yaml_text: str) -> list[dict[str, Any]]:
+        if not yaml_text:
+            return []
+        try:
+            data = yaml.safe_load(yaml_text) or []
+            res: list[dict[str, Any]] = []
+            for item in data if isinstance(data, list) else []:
+                try:
+                    res.append({
+                        "name": str(item.get("name") or "window"),
+                        "azimuth": float(item.get("azimuth")),
+                        "fov": float(item.get("fov", 30.0)),
+                        "elev_min": float(item.get("elev_min", 5.0)),
+                    })
+                except Exception:  # noqa: BLE001
+                    continue
+            return res
+        except Exception as err:  # noqa: BLE001
+            _LOGGER.warning("Illuminance Plus: windows_yaml parse failed: %s", err)
+            return []
 
     async def _update(self, _now) -> None:
         # Eingaben
@@ -301,17 +324,35 @@ class IlluminancePlus(SensorEntity):
         # Steuer-Lux (geglättet) für is_dark
         control_lux = self._smooth(raw_lux)
 
+        # Trend (optional)
+        now_ts = dt_util.utcnow().timestamp()
+        self._hist.append((now_ts, control_lux))
+        trend_enabled = bool(self.cfg.get(CONF_TREND_ENABLED, DEFAULT_TREND_ENABLED))
+        lux_trend_5m = lux_trend_15m = None
+        darkening_fast = brightening_fast = None
+        if trend_enabled:
+            win5 = int(self.cfg.get(CONF_TREND_WIN_5M, DEFAULT_TREND_WIN_5M))
+            win15 = int(self.cfg.get(CONF_TREND_WIN_15M, DEFAULT_TREND_WIN_15M))
+            th_down = float(self.cfg.get(CONF_TREND_TH_DOWN, DEFAULT_TREND_TH_DOWN))
+            th_up = float(self.cfg.get(CONF_TREND_TH_UP, DEFAULT_TREND_TH_UP))
+            lux_trend_5m = self._trend(now_ts, win5, control_lux)
+            lux_trend_15m = self._trend(now_ts, win15, control_lux)
+            # bools nur setzen, wenn Trends vorhanden
+            if lux_trend_5m is not None:
+                darkening_fast = bool(lux_trend_5m <= th_down)
+                brightening_fast = bool(lux_trend_5m >= th_up)
+
         # Tagesabschnitt
         lat = getattr(self.hass.config, "latitude", None)
         daypart_en = _daypart_from_sun(elev, az, lat)
         lang = getattr(self.hass.config, "language", "en") or "en"
         daypart_label = _localized_daypart(daypart_en, lang)
 
-        # Hysterese auf Basis der geglätteten Steuergröße
+        # Hysterese (is_dark) auf Basis der geglätteten Steuergröße
         on_thr  = float(self.cfg.get(CONF_ON, 1000))
         off_thr = float(self.cfg.get(CONF_OFF, 3000))
 
-        # NEU: Empfindlichkeit nur für is_dark
+        # is_dark Empfindlichkeit
         sens_pct = float(self.cfg.get(CONF_DARK_SENSITIVITY, DEFAULT_DARK_SENSITIVITY))
         sens = max(1e-6, sens_pct / 100.0)
         on_eff  = on_thr  * sens
@@ -325,14 +366,105 @@ class IlluminancePlus(SensorEntity):
             elif control_lux >= off_eff:
                 self._is_dark = False
 
-        # Attribute
-        self._attr_extra_state_attributes = {
+        # Twilight-Flags (optional)
+        twilight_enabled = bool(self.cfg.get(CONF_TWILIGHT_ENABLED, DEFAULT_TWILIGHT_ENABLED))
+        is_civil = is_nautical = is_astro = None
+        if twilight_enabled:
+            # Grenzen gemäß Definition
+            is_civil = (-6.0 <= elev < 0.0)
+            is_nautical = (-12.0 <= elev < -6.0)
+            is_astro = (-18.0 <= elev < -12.0)
+
+        # Kurzfrist-Prognose (optional)
+        forecast_enabled = bool(self.cfg.get(CONF_FORECAST_ENABLED, DEFAULT_FORECAST_ENABLED))
+        lux_fc_15 = lux_fc_30 = lux_fc_60 = None
+        dark_soon = None
+        if forecast_enabled and self.cfg.get(CONF_WEATHER):
+            # Forecast-Liste (wenn vorhanden) – vorsichtig lesen
+            w_ent = self.hass.states.get(self.cfg.get(CONF_WEATHER))
+            fc_list = []
+            if w_ent and isinstance(w_ent.attributes.get("forecast"), list):
+                fc_list = w_ent.attributes.get("forecast") or []
+
+            def _pick_cloud_precip(dt_target):
+                """Einfachstes Matching: nimm den Eintrag mit minimaler Zeitdifferenz."""
+                best = None
+                best_dt = None
+                for row in fc_list:
+                    ts = row.get("datetime") or row.get("datetime_iso") or row.get("time")
+                    if not ts:
+                        continue
+                    dt = dt_util.parse_datetime(ts)
+                    if dt is None:
+                        continue
+                    if best_dt is None or abs((dt - dt_target).total_seconds()) < abs((best_dt - dt_target).total_seconds()):
+                        best_dt = dt
+                        best = row
+                if not best:
+                    return None, None, None
+                cloud = best.get("cloud_coverage")
+                cond = best.get("condition")
+                rain = best.get("precipitation") or best.get("precipitation_probability")
+                try:
+                    cloud = float(cloud) if cloud is not None else None
+                except Exception:  # noqa: BLE001
+                    cloud = None
+                try:
+                    rain = float(rain) if rain is not None else None
+                except Exception:  # noqa: BLE001
+                    rain = None
+                return cloud, cond, rain
+
+            def _predict_lux(dt_target):
+                # Einfach: gleiche Sonnenhöhe wie jetzt (für 15–60 min ok),
+                # dämpfe mit prognostizierter Bewölkung/Niederschlag.
+                cloud_p, cond_p, rain_p = _pick_cloud_precip(dt_target)
+                div_p = _cloud_divisor(cloud_p, cond_p, float(self.cfg.get(CONF_MAX_CLOUD_DIV, DEFAULT_MAX_CLOUD_DIV)), DEFAULT_FALLBACK)
+                gain_r = _gain_rain(rain_p)
+                return 0.0 if clear <= 0 else clear / max(1.0, (div_p * gain_r * gain_vis * gain_low))
+
+            now = dt_util.utcnow()
+            if bool(self.cfg.get(CONF_FORECAST_15M, DEFAULT_FORECAST_15M)):
+                lux_fc_15 = round(_predict_lux(now + timedelta(minutes=15)), 0)
+            if bool(self.cfg.get(CONF_FORECAST_30M, DEFAULT_FORECAST_30M)):
+                lux_fc_30 = round(_predict_lux(now + timedelta(minutes=30)), 0)
+            if bool(self.cfg.get(CONF_FORECAST_60M, DEFAULT_FORECAST_60M)):
+                lux_fc_60 = round(_predict_lux(now + timedelta(minutes=60)), 0)
+
+            # dark_soon: ob einer der Prognosewerte <= (on_eff + margin) liegt
+            margin = float(self.cfg.get(CONF_DARK_SOON_MARGIN, DEFAULT_DARK_SOON_MARGIN))
+            candidates = [v for v in (lux_fc_15, lux_fc_30, lux_fc_60) if isinstance(v, (int, float))]
+            dark_soon = bool(candidates and min(candidates) <= (on_eff + margin))
+
+        # Fenster/Blendung (optional)
+        windows_enabled = bool(self.cfg.get(CONF_WINDOWS_ENABLED, DEFAULT_WINDOWS_ENABLED))
+        glare_enabled = bool(self.cfg.get(CONF_GLARE_ENABLED, DEFAULT_GLARE_ENABLED))
+        sun_on_list = []
+        glare_risk = None
+        if windows_enabled and az is not None:
+            wins = self._parse_windows(str(self.cfg.get(CONF_WINDOWS_YAML, DEFAULT_WINDOWS_YAML)))
+            for w in wins:
+                if elev >= w["elev_min"] and _circ_dist(az, w["azimuth"]) <= w["fov"]:
+                    sun_on_list.append(w["name"])
+            if glare_enabled:
+                # simple Heuristik: je höher clear/höher Elevation, desto stärker
+                if sun_on_list:
+                    if clear > 80000 and elev > 25:
+                        glare_risk = "high"
+                    elif clear > 40000 and elev > 15:
+                        glare_risk = "med"
+                    else:
+                        glare_risk = "low"
+                else:
+                    glare_risk = "none"
+
+        # Attribute aufbauen
+        attrs: dict[str, Any] = {
             "daypart": daypart_en,
             "daypart_label": daypart_label,
             "is_dark": self._is_dark,
             "on_threshold": on_thr,
             "off_threshold": off_thr,
-            # NEU: sichtbare effektive Schwellen & Empfindlichkeit
             "dark_sensitivity_pct": int(round(sens_pct)),
             "on_threshold_eff": round(on_eff, 0),
             "off_threshold_eff": round(off_eff, 0),
@@ -354,4 +486,32 @@ class IlluminancePlus(SensorEntity):
             "attribution": "Illuminance Plus © 2025 Martin Kluger · Clear-sky model by pnbruckner",
         }
 
+        # optionale Zusatzattribute nur setzen, wenn aktiv
+        if trend_enabled:
+            attrs.update({
+                "lux_trend_5m": None if lux_trend_5m is None else round(lux_trend_5m, 1),
+                "lux_trend_15m": None if lux_trend_15m is None else round(lux_trend_15m, 1),
+                "darkening_fast": darkening_fast,
+                "brightening_fast": brightening_fast,
+            })
+        if forecast_enabled:
+            attrs.update({
+                "lux_forecast_15m": lux_fc_15,
+                "lux_forecast_30m": lux_fc_30,
+                "lux_forecast_60m": lux_fc_60,
+                "dark_soon": dark_soon,
+            })
+        if twilight_enabled:
+            attrs.update({
+                "is_civil_twilight": is_civil,
+                "is_nautical_twilight": is_nautical,
+                "is_astronomical_twilight": is_astro,
+            })
+        if windows_enabled:
+            attrs.update({
+                "sun_on_window": sun_on_list,   # Liste der Fensternamen
+                "glare_risk": glare_risk,
+            })
+
+        self._attr_extra_state_attributes = attrs
         self.async_write_ha_state()

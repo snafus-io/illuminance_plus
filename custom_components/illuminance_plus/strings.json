@@ -4,18 +4,18 @@
     "step": {
       "user": {
         "title": "Create Illuminance Plus",
-        "description": "Calculates outdoor illuminance (lux) from sun elevation and refines it with optional weather sensors. The entity exposes attributes 'daypart' (with localization) and 'is_dark' (with hysteresis).",
+        "description": "Calculates outdoor illuminance (lux) and refines it with optional weather sensors. Exposes 'daypart' and 'is_dark' (with hysteresis).",
         "data": {
           "name": "Name",
           "weather_entity": "Weather entity (optional)",
-          "cloud_entity": "Cloud coverage (0–100 %, optional)",
-          "precip_entity": "Precipitation (mm/h, optional)",
-          "visibility_entity": "Visibility (km, optional)",
+          "cloud_entity": "Cloud coverage (optional)",
+          "precip_entity": "Precipitation (optional)",
+          "visibility_entity": "Visibility (optional)",
           "mode": "Mode",
-          "scan_seconds": "Update interval (seconds)",
-          "on_threshold": "Hysteresis: turn ON (lux)",
-          "off_threshold": "Hysteresis: turn OFF (lux)",
-          "max_cloud_div": "Max cloud attenuation (÷)"
+          "scan_seconds": "Update interval",
+          "on_threshold": "Hysteresis: turn ON",
+          "off_threshold": "Hysteresis: turn OFF",
+          "max_cloud_div": "Max cloud attenuation"
         }
       }
     },
@@ -32,14 +32,31 @@
         "data": {
           "name": "Name",
           "weather_entity": "Weather entity (optional)",
-          "cloud_entity": "Cloud coverage (0–100 %, optional)",
-          "precip_entity": "Precipitation (mm/h, optional)",
-          "visibility_entity": "Visibility (km, optional)",
+          "cloud_entity": "Cloud coverage (optional)",
+          "precip_entity": "Precipitation (optional)",
+          "visibility_entity": "Visibility (optional)",
           "mode": "Mode",
-          "scan_seconds": "Update interval (seconds)",
-          "on_threshold": "Hysteresis: turn ON (lux)",
-          "off_threshold": "Hysteresis: turn OFF (lux)",
-          "max_cloud_div": "Max cloud attenuation (÷)"
+          "scan_seconds": "Update interval",
+          "smooth_seconds": "Smoothing",
+          "on_threshold": "Hysteresis: turn ON",
+          "off_threshold": "Hysteresis: turn OFF",
+          "max_cloud_div": "Max cloud attenuation",
+          "dark_sensitivity": "Dark sensitivity",
+          "trend_enabled": "Enable trend detection",
+          "trend_window_5m": "Trend window (5 min)",
+          "trend_window_15m": "Trend window (15 min)",
+          "darkening_fast_threshold": "Darkening fast threshold",
+          "brightening_fast_threshold": "Brightening fast threshold",
+          "forecast_enabled": "Enable short-term forecast",
+          "forecast_15m": "Forecast 15 min",
+          "forecast_30m": "Forecast 30 min",
+          "forecast_60m": "Forecast 60 min",
+          "dark_soon_margin": "Dark soon margin",
+          "twilight_enabled": "Enable twilight flags",
+          "helpers_enabled": "Expose helper entities",
+          "windows_enabled": "Enable window/glare evaluation",
+          "glare_enabled": "Compute glare risk (if windows enabled)",
+          "windows_yaml": "Windows YAML (name, azimuth, fov, elev_min)"
         }
       }
     }
