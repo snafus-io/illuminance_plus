@@ -25,7 +25,7 @@ from .const import (
     CONF_WEATHER, CONF_CLOUD, CONF_PRECIP, CONF_VIS,
     CONF_ON, CONF_OFF, CONF_MAX_CLOUD_DIV, CONF_SMOOTH_SECONDS,
     CONF_DARK_SENSITIVITY, DEFAULT_DARK_SENSITIVITY,
-    # Optional-Features (falls bei dir aktiv):
+    # Optional-Features:
     CONF_TREND_ENABLED, CONF_TREND_WIN_5M, CONF_TREND_WIN_15M, CONF_TREND_TH_DOWN, CONF_TREND_TH_UP,
     DEFAULT_TREND_ENABLED, DEFAULT_TREND_WIN_5M, DEFAULT_TREND_WIN_15M, DEFAULT_TREND_TH_DOWN, DEFAULT_TREND_TH_UP,
     CONF_FORECAST_ENABLED, CONF_FORECAST_15M, CONF_FORECAST_30M, CONF_FORECAST_60M, CONF_DARK_SOON_MARGIN,
@@ -80,7 +80,7 @@ def _build_options_schema(values: dict[str, Any] | None = None) -> vol.Schema:
         vol.Optional(CONF_MAX_CLOUD_DIV, default=v.get(CONF_MAX_CLOUD_DIV, DEFAULT_MAX_CLOUD_DIV)): NumberSelector(
             NumberSelectorConfig(min=1, max=30, step=0.5, mode=NumberSelectorMode.BOX)
         ),
-        # >>> NEU: Bereich 5–300 % (statt 50–150 %)
+        # >>> Bereich 5–300 %
         vol.Optional(CONF_DARK_SENSITIVITY, default=v.get(CONF_DARK_SENSITIVITY, DEFAULT_DARK_SENSITIVITY)): NumberSelector(
             NumberSelectorConfig(min=5, max=300, step=1, unit_of_measurement="%", mode=NumberSelectorMode.SLIDER)
         ),

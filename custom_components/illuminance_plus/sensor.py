@@ -2,10 +2,11 @@ from __future__ import annotations
 
 import math
 from datetime import timedelta
-from typing import Any
+from typing import Any, Optional
 
 from homeassistant.components.sensor import SensorEntity
 from homeassistant.core import HomeAssistant
+from homeassistant.config_entries import ConfigEntry
 from homeassistant.helpers.event import async_track_time_interval
 
 from .const import (
@@ -28,6 +29,16 @@ from .const import (
     DEFAULT_MAX_CLOUD_DIV,
     CONF_DARK_SENSITIVITY,
     DEFAULT_DARK_SENSITIVITY,
+    # Zusatz für dark_soon / Trend:
+    CONF_FORECAST_ENABLED,
+    DEFAULT_FORECAST_ENABLED,
+    CONF_DARK_SOON_MARGIN,
+    DEFAULT_DARK_SOON_MARGIN,
+    CONF_TREND_ENABLED,
+    DEFAULT_TREND_ENABLED,
+    CONF_TREND_TH_DOWN,
+    DEFAULT_TREND_TH_DOWN,
+    DEFAULT_FALLBACK,
 )
 
 # ---------- kleine Helfer ----------
@@ -57,7 +68,7 @@ def _clear_sky_lux(elev: float, mode: str) -> float:
         return 0.0
     return max(0.0, 120000.0 * math.sin(math.radians(max(0.0, elev))) ** 1.5)
 
-def _cloud_divisor(cloud: float | None, weather: str | None, max_div: float, fallback: float) -> float:
+def _cloud_divisor(cloud: float | None, weather: Optional[str], max_div: float, fallback: float) -> float:
     if cloud is None:
         return fallback
     c = max(0.0, min(100.0, float(cloud)))
@@ -68,7 +79,7 @@ def _gain_rain(mm_h: float) -> float:
         return 1.0
     return 1.0 + min(0.7, mm_h * 0.3)
 
-def _gain_visibility(km: float, weather: str | None) -> float:
+def _gain_visibility(km: float, weather: Optional[str]) -> float:
     if km >= 10:
         return 1.0
     return max(0.6, km / 10.0)
@@ -80,8 +91,6 @@ def _gain_low_sun(elev: float) -> float:
         return 1.2
     return 1.0 + (10 - elev) * 0.02
 
-DEFAULT_FALLBACK = 5.0
-
 
 # --------------------------- Entity --------------------------- #
 class IlluminancePlus(SensorEntity):
@@ -90,6 +99,7 @@ class IlluminancePlus(SensorEntity):
     _attr_device_class = "illuminance"
     _attr_state_class = "measurement"
     _attr_native_unit_of_measurement = UNIT_LUX
+    _attr_should_poll = False
 
     def __init__(self, hass: HomeAssistant, name: str, cfg: dict[str, Any], entry_id: str) -> None:
         self.hass = hass
@@ -103,6 +113,10 @@ class IlluminancePlus(SensorEntity):
         self._ema: float | None = None  # geglättete Lux für Steuerung
         self._tau: float = float(cfg.get(CONF_SMOOTH_SECONDS, DEFAULT_SMOOTH_SECONDS))
         self._scan_secs: float = float(cfg.get(CONF_SCAN, DEFAULT_SCAN_SECONDS))
+
+        # Trend
+        self._last_control: float | None = None
+        self._slope_lx_min: float | None = None
 
         self._unsub = async_track_time_interval(
             hass, self._update, timedelta(seconds=int(self._scan_secs))
@@ -202,9 +216,33 @@ class IlluminancePlus(SensorEntity):
             elif control_lux >= off_eff:
                 self._is_dark = False
 
+        # Trend (lx/min)
+        if self._last_control is None:
+            slope = None
+        else:
+            minutes = max(1e-9, self._scan_secs / 60.0)
+            slope = (control_lux - self._last_control) / minutes
+        self._last_control = control_lux
+        self._slope_lx_min = slope
+
+        # dark_soon (einfach + optional Trend/Forecast einbeziehen)
+        margin = float(self.cfg.get(CONF_DARK_SOON_MARGIN, DEFAULT_DARK_SOON_MARGIN))
+        dark_soon = control_lux <= (on_eff + margin)
+
+        if bool(self.cfg.get(CONF_TREND_ENABLED, DEFAULT_TREND_ENABLED)) and slope is not None:
+            th_down = float(self.cfg.get(CONF_TREND_TH_DOWN, DEFAULT_TREND_TH_DOWN))
+            if slope <= th_down:
+                dark_soon = True
+
+        if bool(self.cfg.get(CONF_FORECAST_ENABLED, DEFAULT_FORECAST_ENABLED)) and slope is not None:
+            # einfache Heuristik: bereits in Nähe der OFF-Schwelle und fallender Trend
+            if slope < 0 and control_lux <= (off_eff + margin):
+                dark_soon = True
+
         # Attribute
         self._attr_extra_state_attributes = {
             "is_dark": self._is_dark,
+            "dark_soon": dark_soon,
             "on_threshold": on_base,
             "off_threshold": off_base,
             "dark_sensitivity_pct": round(sens_pct, 1),
@@ -224,7 +262,17 @@ class IlluminancePlus(SensorEntity):
             "mode": mode,
             "raw_lux": round(raw_lux, 0),
             "control_lux": round(control_lux, 0),
+            "slope_lx_per_min": None if slope is None else round(slope, 1),
             "smooth_seconds": self._tau,
         }
 
         self.async_write_ha_state()
+
+
+# --------------- REQUIRED: async_setup_entry (Fix) ---------------
+async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities) -> None:
+    """Set up the sensor platform from a config entry."""
+    data = {**entry.data, **entry.options}
+    name = data.get(CONF_NAME, DEFAULT_NAME)
+    entity = IlluminancePlus(hass, name, data, entry.entry_id)
+    async_add_entities([entity])
