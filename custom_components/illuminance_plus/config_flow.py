@@ -25,7 +25,7 @@ from .const import (
     CONF_WEATHER, CONF_CLOUD, CONF_PRECIP, CONF_VIS,
     CONF_ON, CONF_OFF, CONF_MAX_CLOUD_DIV, CONF_SMOOTH_SECONDS,
     CONF_DARK_SENSITIVITY, DEFAULT_DARK_SENSITIVITY,
-    # NEU:
+    # Optional-Features (falls bei dir aktiv):
     CONF_TREND_ENABLED, CONF_TREND_WIN_5M, CONF_TREND_WIN_15M, CONF_TREND_TH_DOWN, CONF_TREND_TH_UP,
     DEFAULT_TREND_ENABLED, DEFAULT_TREND_WIN_5M, DEFAULT_TREND_WIN_15M, DEFAULT_TREND_TH_DOWN, DEFAULT_TREND_TH_UP,
     CONF_FORECAST_ENABLED, CONF_FORECAST_15M, CONF_FORECAST_30M, CONF_FORECAST_60M, CONF_DARK_SOON_MARGIN,
@@ -80,11 +80,12 @@ def _build_options_schema(values: dict[str, Any] | None = None) -> vol.Schema:
         vol.Optional(CONF_MAX_CLOUD_DIV, default=v.get(CONF_MAX_CLOUD_DIV, DEFAULT_MAX_CLOUD_DIV)): NumberSelector(
             NumberSelectorConfig(min=1, max=30, step=0.5, mode=NumberSelectorMode.BOX)
         ),
+        # >>> NEU: Bereich 5–300 % (statt 50–150 %)
         vol.Optional(CONF_DARK_SENSITIVITY, default=v.get(CONF_DARK_SENSITIVITY, DEFAULT_DARK_SENSITIVITY)): NumberSelector(
-            NumberSelectorConfig(min=50, max=150, step=5, unit_of_measurement="%", mode=NumberSelectorMode.SLIDER)
+            NumberSelectorConfig(min=5, max=300, step=1, unit_of_measurement="%", mode=NumberSelectorMode.SLIDER)
         ),
 
-        # --- Trend ---
+        # --- Trend (optional) ---
         vol.Optional(CONF_TREND_ENABLED, default=v.get(CONF_TREND_ENABLED, DEFAULT_TREND_ENABLED)): BooleanSelector(),
         vol.Optional(CONF_TREND_WIN_5M, default=v.get(CONF_TREND_WIN_5M, DEFAULT_TREND_WIN_5M)): NumberSelector(
             NumberSelectorConfig(min=3, max=30, step=1, mode=NumberSelectorMode.BOX, unit_of_measurement="min")
@@ -99,7 +100,7 @@ def _build_options_schema(values: dict[str, Any] | None = None) -> vol.Schema:
             NumberSelectorConfig(min=0, max=2000, step=10, mode=NumberSelectorMode.BOX, unit_of_measurement="lx/min")
         ),
 
-        # --- Forecast ---
+        # --- Forecast (optional) ---
         vol.Optional(CONF_FORECAST_ENABLED, default=v.get(CONF_FORECAST_ENABLED, DEFAULT_FORECAST_ENABLED)): BooleanSelector(),
         vol.Optional(CONF_FORECAST_15M, default=v.get(CONF_FORECAST_15M, DEFAULT_FORECAST_15M)): BooleanSelector(),
         vol.Optional(CONF_FORECAST_30M, default=v.get(CONF_FORECAST_30M, DEFAULT_FORECAST_30M)): BooleanSelector(),
@@ -108,13 +109,13 @@ def _build_options_schema(values: dict[str, Any] | None = None) -> vol.Schema:
             NumberSelectorConfig(min=0, max=2000, step=50, mode=NumberSelectorMode.BOX, unit_of_measurement="lx")
         ),
 
-        # --- Twilight ---
+        # --- Twilight (optional) ---
         vol.Optional(CONF_TWILIGHT_ENABLED, default=v.get(CONF_TWILIGHT_ENABLED, DEFAULT_TWILIGHT_ENABLED)): BooleanSelector(),
 
-        # --- Helper-Entities ---
+        # --- Helper-Entities (optional) ---
         vol.Optional(CONF_HELPERS_ENABLED, default=v.get(CONF_HELPERS_ENABLED, DEFAULT_HELPERS_ENABLED)): BooleanSelector(),
 
-        # --- Fenster / Blendung ---
+        # --- Fenster / Blendung (optional) ---
         vol.Optional(CONF_WINDOWS_ENABLED, default=v.get(CONF_WINDOWS_ENABLED, DEFAULT_WINDOWS_ENABLED)): BooleanSelector(),
         vol.Optional(CONF_GLARE_ENABLED, default=v.get(CONF_GLARE_ENABLED, DEFAULT_GLARE_ENABLED)): BooleanSelector(),
         vol.Optional(CONF_WINDOWS_YAML, default=v.get(CONF_WINDOWS_YAML, DEFAULT_WINDOWS_YAML)): TextSelector(),
