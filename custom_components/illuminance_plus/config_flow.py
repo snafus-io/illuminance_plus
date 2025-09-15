@@ -13,7 +13,7 @@ from homeassistant.config_entries import (
     OptionsFlowWithConfigEntry,
 )
 from homeassistant.core import callback
-    # FlowResult-Typ ist optional, verbessert IDE-Hints
+# FlowResult-Typ ist optional, verbessert IDE-Hints
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers.selector import (
     EntitySelector, EntitySelectorConfig,
@@ -28,6 +28,8 @@ from .const import (
     CONF_NAME, CONF_MODE, CONF_SCAN,
     CONF_WEATHER, CONF_CLOUD, CONF_PRECIP, CONF_VIS,
     CONF_ON, CONF_OFF, CONF_MAX_CLOUD_DIV, CONF_SMOOTH_SECONDS,
+    # NEU:
+    CONF_DARK_SENSITIVITY, DEFAULT_DARK_SENSITIVITY,
 )
 
 def _validate_thresholds(user_input: dict[str, Any]) -> str | None:
@@ -72,6 +74,10 @@ def _build_options_schema(values: dict[str, Any] | None = None) -> vol.Schema:
         ),
         vol.Optional(CONF_MAX_CLOUD_DIV, default=v.get(CONF_MAX_CLOUD_DIV, DEFAULT_MAX_CLOUD_DIV)): NumberSelector(
             NumberSelectorConfig(min=1, max=30, step=0.5, mode=NumberSelectorMode.BOX)
+        ),
+        # NEU: Empfindlichkeit nur für is_dark
+        vol.Optional(CONF_DARK_SENSITIVITY, default=v.get(CONF_DARK_SENSITIVITY, DEFAULT_DARK_SENSITIVITY)): NumberSelector(
+            NumberSelectorConfig(min=50, max=150, step=5, unit_of_measurement="%", mode=NumberSelectorMode.SLIDER)
         ),
     })
 

@@ -24,6 +24,10 @@ CONF_OFF = "off_threshold"           # lx (Hysterese AUS)
 CONF_MAX_CLOUD_DIV = "max_cloud_div" # max. Wolken-Dämpfung (÷)
 CONF_SMOOTH_SECONDS = "smooth_seconds"
 
+# NEU: Empfindlichkeit nur für is_dark (in %)
+CONF_DARK_SENSITIVITY = "dark_sensitivity"
+DEFAULT_DARK_SENSITIVITY = 100
+
 # Mapping, wenn KEIN numerischer Cloud-%-Sensor vorhanden
 WEATHER_FACTORS = {
     "exceptional": 1.0, "sunny": 1.0, "clear": 1.0,

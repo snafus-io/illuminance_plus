@@ -52,6 +52,10 @@ CONF_OFF = "off_threshold"
 CONF_MAX_CLOUD_DIV = "max_cloud_div"
 CONF_SMOOTH_SECONDS = "smooth_seconds"
 
+# NEU: Empfindlichkeit nur für is_dark (in %)
+CONF_DARK_SENSITIVITY = "dark_sensitivity"
+DEFAULT_DARK_SENSITIVITY = 100
+
 WEATHER_FACTORS: dict[str, float] = {
     "exceptional": 1.0, "sunny": 1.0, "clear": 1.0,
     "partlycloudy": 2.0, "cloudy": 5.0, "rainy": 5.0,
@@ -306,12 +310,19 @@ class IlluminancePlus(SensorEntity):
         # Hysterese auf Basis der geglätteten Steuergröße
         on_thr  = float(self.cfg.get(CONF_ON, 1000))
         off_thr = float(self.cfg.get(CONF_OFF, 3000))
+
+        # NEU: Empfindlichkeit nur für is_dark
+        sens_pct = float(self.cfg.get(CONF_DARK_SENSITIVITY, DEFAULT_DARK_SENSITIVITY))
+        sens = max(1e-6, sens_pct / 100.0)
+        on_eff  = on_thr  * sens
+        off_eff = off_thr * sens
+
         if self._is_dark is None:
-            self._is_dark = (control_lux <= on_thr)
+            self._is_dark = (control_lux <= on_eff)
         else:
-            if control_lux <= on_thr:
+            if control_lux <= on_eff:
                 self._is_dark = True
-            elif control_lux >= off_thr:
+            elif control_lux >= off_eff:
                 self._is_dark = False
 
         # Attribute
@@ -321,6 +332,10 @@ class IlluminancePlus(SensorEntity):
             "is_dark": self._is_dark,
             "on_threshold": on_thr,
             "off_threshold": off_thr,
+            # NEU: sichtbare effektive Schwellen & Empfindlichkeit
+            "dark_sensitivity_pct": int(round(sens_pct)),
+            "on_threshold_eff": round(on_eff, 0),
+            "off_threshold_eff": round(off_eff, 0),
             "elevation": round(elev, 2),
             "azimuth": round(az, 1) if isinstance(az, (int, float)) else az,
             "clear_sky_lux": round(clear, 0),
